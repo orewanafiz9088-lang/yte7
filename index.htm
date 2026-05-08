@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Puspo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@300;400&family=Inter:wght@200;300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
+<style>
+  :root {
+    --void: #000000;
+    --deep: #04000a;
+    --purple-glow: #7b2fd4;
+    --pink-glow: #d63384;
+    --soft-pink: #f472b6;
+    --lavender: #c084fc;
+    --white-soft: rgba(255,255,255,0.85);
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--white-soft);
+    font-family: 'Inter', sans-serif;
+    font-weight: 200;
+    cursor: none;
+    overflow-x: hidden;
+  }
+
+  /* ─── CUSTOM CURSOR ─── */
+  #cursor {
+    width: 12px; height: 12px;
+    background: var(--soft-pink);
+    border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s, background 0.3s, width 0.3s, height 0.3s, box-shadow 0.3s;
+    box-shadow: 0 0 20px var(--soft-pink), 0 0 40px rgba(244,114,182,0.4);
+  }
+  #cursor-trail {
+    width: 40px; height: 40px;
+    border: 1px solid rgba(244,114,182,0.3);
+    border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: all 0.15s ease;
+  }
+  body:hover #cursor { opacity: 1; }
+
+  /* ─── LOADING SCREEN ─── */
+  #loader {
+    position: fixed; inset: 0;
+    background: #000;
+    z-index: 10000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 32px;
+  }
+  .loader-name {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 300;
+    letter-spacing: 0.4em;
+    color: transparent;
+    background: linear-gradient(135deg, var(--lavender), var(--soft-pink), var(--lavender));
+    -webkit-background-clip: text;
+    background-clip: text;
+    opacity: 0;
+    animation: fadeGlow 2s ease 0.5s forwards;
+  }
+  .loader-line {
+    width: 200px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--purple-glow), var(--soft-pink), transparent);
+    animation: lineExpand 2.5s ease 0.8s forwards;
+    transform: scaleX(0);
+    transform-origin: center;
+  }
+  .loader-progress {
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.3);
+    font-family: 'Inter', sans-serif;
+    font-weight: 200;
+    opacity: 0;
+    animation: fadeIn 1s ease 1.5s forwards;
+  }
+  @keyframes fadeGlow {
+    0% { opacity: 0; filter: blur(20px); }
+    100% { opacity: 1; filter: blur(0); }
+  }
+  @keyframes lineExpand {
+    0% { transform: scaleX(0); opacity: 0; }
+    100% { transform: scaleX(1); opacity: 1; }
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  /* ─── THREE.JS CANVAS ─── */
+  #bg-canvas {
+    position: fixed; inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ─── SECTIONS ─── */
+  section {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 20px;
+  }
+
+  /* ─── OPENING SCENE ─── */
+  #opening {
+    position: fixed; inset: 0;
+    z-index: 100;
+    background: #000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 40px;
+    transition: opacity 1.2s ease, transform 1.2s ease;
+  }
+  #opening.exit {
+    opacity: 0;
+    transform: scale(1.08);
+    pointer-events: none;
+  }
+  #typed-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.1rem, 3vw, 1.7rem);
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(255,255,255,0.8);
+    text-align: center;
+    max-width: 600px;
+    line-height: 2;
+    min-height: 5rem;
+    letter-spacing: 0.04em;
+  }
+  .typed-cursor { color: var(--soft-pink); }
+  #enter-btn {
+    opacity: 0;
+    background: transparent;
+    border: 1px solid rgba(244,114,182,0.4);
+    color: rgba(255,255,255,0.7);
+    padding: 14px 48px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    cursor: none;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  #enter-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(123,47,212,0.2), rgba(214,51,132,0.2));
+    opacity: 0; transition: opacity 0.4s;
+  }
+  #enter-btn:hover::before { opacity: 1; }
+  #enter-btn:hover {
+    border-color: rgba(244,114,182,0.8);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(244,114,182,0.2), 0 0 60px rgba(123,47,212,0.1);
+  }
+  #enter-btn.visible { opacity: 1; transition: opacity 1s ease, all 0.4s ease; }
+
+  /* ─── MAIN WORLD (scrollable) ─── */
+  #main-world {
+    opacity: 0;
+    transition: opacity 1.5s ease;
+  }
+  #main-world.visible { opacity: 1; }
+
+  /* ─── GLASS CARD ─── */
+  .glass-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 2px;
+    padding: 40px 48px;
+    max-width: 680px;
+    width: 100%;
+  }
+
+  /* ─── SECTION LABEL ─── */
+  .sec-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.5em;
+    color: rgba(192,132,252,0.5);
+    margin-bottom: 48px;
+    text-transform: uppercase;
+  }
+
+  /* ─── ORBIT SECTION ─── */
+  #orbit-section { gap: 60px; }
+  #orbit-canvas {
+    width: min(380px, 90vw);
+    height: min(380px, 90vw);
+  }
+  .orbit-text {
+    text-align: center;
+    max-width: 500px;
+  }
+  .orbit-text .date-line {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+    font-style: italic;
+    color: var(--lavender);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+  .orbit-text .sub-line {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.12em;
+    line-height: 2.2;
+  }
+
+  /* ─── UNSAID THINGS ─── */
+  #unsaid-section {
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+  }
+  .bubble-field {
+    position: relative;
+    width: 100%;
+    height: 80vh;
+    max-width: 900px;
+  }
+  .msg-bubble {
+    position: absolute;
+    background: rgba(123,47,212,0.08);
+    border: 1px solid rgba(192,132,252,0.15);
+    backdrop-filter: blur(8px);
+    border-radius: 18px 18px 18px 4px;
+    padding: 14px 22px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(0.85rem, 2vw, 1.05rem);
+    font-style: italic;
+    color: rgba(255,255,255,0.7);
+    max-width: 260px;
+    opacity: 0;
+    animation: bubbleFloat 6s ease-in-out infinite;
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+  }
+  @keyframes bubbleFloat {
+    0%   { opacity: 0; transform: translateY(20px); }
+    15%  { opacity: 1; transform: translateY(0); }
+    75%  { opacity: 0.8; transform: translateY(-10px); }
+    100% { opacity: 0; transform: translateY(-30px); }
+  }
+
+  /* ─── PARALLEL FEELINGS ─── */
+  #parallel-section {}
+  #parallel-canvas {
+    width: min(600px, 90vw);
+    height: 160px;
+    margin: 40px 0;
+  }
+  .parallel-quote {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1rem, 2.5vw, 1.35rem);
+    font-style: italic;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    letter-spacing: 0.06em;
+    max-width: 520px;
+  }
+
+  /* ─── NOTIFICATION ROOM ─── */
+  #notification-section {
+    background: rgba(4,0,10,0.6);
+    position: relative;
+    overflow: hidden;
+  }
+  #notif-room {
+    width: min(420px, 92vw);
+    min-height: 520px;
+    background: rgba(10,5,20,0.9);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 28px;
+    padding: 28px;
+    position: relative;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 60px rgba(123,47,212,0.08);
+  }
+  .notif-header {
+    display: flex; align-items: center; gap: 12px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 24px;
+  }
+  .notif-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple-glow), var(--pink-glow));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    font-family: 'Cinzel', serif;
+    box-shadow: 0 0 20px rgba(123,47,212,0.4);
+  }
+  .notif-name {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.7);
+  }
+  .notif-status {
+    font-size: 0.6rem;
+    color: rgba(134,239,172,0.7);
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+  .notif-time {
+    margin-left: auto;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 0.06em;
+  }
+  .chat-msgs { display: flex; flex-direction: column; gap: 12px; }
+  .chat-msg {
+    display: flex; opacity: 0;
+    animation: msgAppear 0.5s ease forwards;
+  }
+  .chat-msg.them { justify-content: flex-start; }
+  .chat-msg.me   { justify-content: flex-end; }
+  .msg-text {
+    padding: 10px 16px;
+    border-radius: 16px;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+    max-width: 75%;
+    color: rgba(255,255,255,0.75);
+  }
+  .chat-msg.them .msg-text {
+    background: rgba(123,47,212,0.2);
+    border: 1px solid rgba(123,47,212,0.2);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-msg.me .msg-text {
+    background: rgba(214,51,132,0.15);
+    border: 1px solid rgba(214,51,132,0.15);
+    border-bottom-right-radius: 4px;
+  }
+  @keyframes msgAppear {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .system-msg {
+    text-align: center;
+    font-size: 0.65rem;
+    color: rgba(192,132,252,0.5);
+    letter-spacing: 0.15em;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    font-family: 'Cinzel', serif;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+
+  /* ─── IF YOU KNEW ─── */
+  #ifyouknew-section { gap: 0; padding: 120px 20px; }
+  .reveal-line {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1rem, 3vw, 1.6rem);
+    font-style: italic;
+    color: rgba(255,255,255,0.15);
+    text-align: center;
+    line-height: 1;
+    padding: 28px 20px;
+    max-width: 700px;
+    width: 100%;
+    letter-spacing: 0.04em;
+    transition: color 0.8s ease, text-shadow 0.8s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .reveal-line.lit {
+    color: rgba(255,255,255,0.85);
+    text-shadow: 0 0 40px rgba(192,132,252,0.3);
+  }
+  .reveal-line:last-child {
+    border-bottom: none;
+    color: rgba(192,132,252,0.4);
+    font-size: clamp(0.85rem, 2vw, 1.1rem);
+  }
+  .reveal-line:last-child.lit {
+    color: rgba(192,132,252,0.8);
+  }
+
+  /* ─── THE ALMOST ─── */
+  #almost-section {}
+  #almost-canvas {
+    width: min(500px, 90vw);
+    height: min(500px, 90vw);
+    cursor: none;
+  }
+  .almost-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(0.85rem, 2vw, 1.1rem);
+    font-style: italic;
+    text-align: center;
+    color: rgba(255,255,255,0.35);
+    max-width: 420px;
+    letter-spacing: 0.06em;
+    margin-top: 16px;
+    line-height: 2;
+  }
+  #glow-hint {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: rgba(244,114,182,0.4);
+    margin-top: 24px;
+    font-family: 'Cinzel', serif;
+  }
+
+  /* ─── FINAL SCENE ─── */
+  #final-section {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+    padding: 80px 20px;
+  }
+  .final-line {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1rem, 3vw, 1.55rem);
+    font-style: italic;
+    color: rgba(255,255,255,0);
+    text-align: center;
+    max-width: 600px;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    padding: 20px;
+    transition: color 1.5s ease, text-shadow 1.5s ease;
+  }
+  .final-line.revealed {
+    color: rgba(255,255,255,0.78);
+  }
+  .final-birthday {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1rem, 4vw, 2rem);
+    font-weight: 300;
+    letter-spacing: 0.35em;
+    color: rgba(255,255,255,0);
+    text-align: center;
+    margin-top: 60px;
+    padding: 20px;
+    transition: color 2s ease, text-shadow 2s ease;
+    background: linear-gradient(135deg, var(--lavender), var(--soft-pink));
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  .final-birthday.revealed {
+    color: transparent;
+    text-shadow: none;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 30px rgba(192,132,252,0.5));
+    opacity: 1 !important;
+  }
+  .final-silence {
+    font-size: 0.6rem;
+    letter-spacing: 0.5em;
+    color: rgba(255,255,255,0);
+    text-align: center;
+    margin-top: 48px;
+    font-family: 'Cinzel', serif;
+    transition: color 2s ease;
+  }
+  .final-silence.revealed { color: rgba(255,255,255,0.2); }
+
+  /* ─── EASTER EGG ─── */
+  #easter-egg {
+    position: fixed;
+    bottom: 30px; right: 30px;
+    z-index: 500;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+  #easter-egg.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .egg-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(244,114,182,0.3);
+    animation: pulse 2s ease infinite;
+    cursor: none;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(2); opacity: 0.8; box-shadow: 0 0 20px var(--soft-pink); }
+  }
+  #egg-msg {
+    position: fixed;
+    bottom: 60px; right: 20px;
+    background: rgba(10,5,20,0.95);
+    border: 1px solid rgba(192,132,252,0.2);
+    padding: 16px 24px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.6);
+    max-width: 200px;
+    text-align: right;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 501;
+    border-radius: 2px;
+    line-height: 1.8;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+  }
+
+  /* ─── AMBIENT GLOW ─── */
+  .ambient-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+  }
+  .orb-1 {
+    width: 600px; height: 600px;
+    background: var(--purple-glow);
+    top: -200px; left: -200px;
+    animation: drift1 20s ease-in-out infinite;
+  }
+  .orb-2 {
+    width: 500px; height: 500px;
+    background: var(--pink-glow);
+    bottom: -100px; right: -100px;
+    animation: drift2 25s ease-in-out infinite;
+  }
+  @keyframes drift1 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(80px, 60px); }
+  }
+  @keyframes drift2 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-60px, -80px); }
+  }
+
+  /* ─── SCROLL INDICATOR ─── */
+  .scroll-hint {
+    position: absolute;
+    bottom: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+    opacity: 0.35;
+    animation: fadeInUp 1s ease 2s forwards;
+  }
+  .scroll-hint span {
+    font-size: 0.55rem;
+    letter-spacing: 0.4em;
+    color: rgba(255,255,255,0.5);
+    font-family: 'Cinzel', serif;
+  }
+  .scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+  @keyframes scrollPulse {
+    0%, 100% { transform: scaleY(1); opacity: 0.5; }
+    50% { transform: scaleY(1.3); opacity: 1; }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to { opacity: 0.35; transform: translateX(-50%) translateY(0); }
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 600px) {
+    .glass-card { padding: 28px 24px; }
+    .msg-bubble { max-width: 200px; font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Ambient glows -->
+<div class="ambient-orb orb-1"></div>
+<div class="ambient-orb orb-2"></div>
+
+<!-- Custom cursor -->
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+
+<!-- Three.js particle background -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- Loading Screen -->
+<div id="loader">
+  <div class="loader-name">P U S P O</div>
+  <div class="loader-line"></div>
+  <div class="loader-progress">LOADING YOUR UNIVERSE</div>
+</div>
+
+<!-- Easter Egg -->
+<div id="easter-egg">
+  <div class="egg-dot" id="egg-trigger"></div>
+</div>
+<div id="egg-msg">Some things you notice<br>only when you stop<br>trying to forget.</div>
+
+<!-- ─────────────────────────────────── -->
+<!-- OPENING SCENE -->
+<!-- ─────────────────────────────────── -->
+<div id="opening">
+  <div id="typed-text"></div>
+  <button id="enter-btn">ENTER</button>
+</div>
+
+<!-- ─────────────────────────────────── -->
+<!-- MAIN WORLD -->
+<!-- ─────────────────────────────────── -->
+<div id="main-world">
+
+  <!-- SECTION: THE ORBIT -->
+  <section id="orbit-section">
+    <div class="sec-label">I — The Orbit</div>
+    <canvas id="orbit-canvas"></canvas>
+    <div class="orbit-text">
+      <div class="date-line" id="orbit-text-1">Since 5th March… something quietly changed.</div>
+      <div class="sub-line" id="orbit-text-2">Not loudly. Not officially.<br>Just… differently.</div>
+    </div>
+    <div class="scroll-hint">
+      <span>SCROLL</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- SECTION: UNSAID THINGS -->
+  <section id="unsaid-section">
+    <div class="sec-label">II — Unsaid Things</div>
+    <div class="bubble-field" id="bubble-field"></div>
+  </section>
+
+  <!-- SECTION: PARALLEL FEELINGS -->
+  <section id="parallel-section">
+    <div class="sec-label">III — Parallel Feelings</div>
+    <canvas id="parallel-canvas"></canvas>
+    <div class="parallel-quote">
+      "Close enough to feel.<br>Far enough to stay undefined."
+    </div>
+  </section>
+
+  <!-- SECTION: NOTIFICATION ROOM -->
+  <section id="notification-section">
+    <div class="sec-label" style="margin-bottom:32px">IV — The Notification Room</div>
+    <div id="notif-room">
+      <div class="notif-header">
+        <div class="notif-avatar">P</div>
+        <div>
+          <div class="notif-name">Puspo</div>
+          <div class="notif-status">● online</div>
+        </div>
+        <div class="notif-time">11:47 PM</div>
+      </div>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="system-msg" id="system-msg">Sometimes love hides inside ordinary conversations.</div>
+    </div>
+  </section>
+
+  <!-- SECTION: IF YOU KNEW -->
+  <section id="ifyouknew-section">
+    <div class="sec-label" style="margin-bottom:20px">V — If You Knew</div>
+    <div class="reveal-line" data-reveal>If you knew how many times I checked your messages…</div>
+    <div class="reveal-line" data-reveal>If you knew how carefully I remembered small details…</div>
+    <div class="reveal-line" data-reveal>If you knew how different your presence felt…</div>
+    <div class="reveal-line" data-reveal>But maybe some things are better left incomplete.</div>
+  </section>
+
+  <!-- SECTION: THE ALMOST -->
+  <section id="almost-section">
+    <div class="sec-label">VI — The Almost</div>
+    <canvas id="almost-canvas"></canvas>
+    <div class="almost-text">"Some connections stay one step away<br>from becoming real."</div>
+    <div id="glow-hint">DRAG TO FEEL</div>
+  </section>
+
+  <!-- SECTION: FINAL -->
+  <section id="final-section">
+    <div class="sec-label" style="margin-bottom:20px">— — —</div>
+    <div class="final-line" id="f1">You were never just another conversation.</div>
+    <div class="final-line" id="f2">You became a feeling.</div>
+    <div class="final-line" id="f3">And maybe… that was the dangerous part.</div>
+    <div class="final-birthday" id="f-birthday">Happy Birthday, Puspo.</div>
+    <div class="final-silence" id="f-silence">∞</div>
+  </section>
+
+</div>
+
+<!-- AUDIO -->
+<audio id="ambient-audio" loop>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// ─── CURSOR ───
+const cursor = document.getElementById('cursor');
+const cursorTrail = document.getElementById('cursor-trail');
+let mx = 0, my = 0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+  setTimeout(() => {
+    cursorTrail.style.left = mx + 'px';
+    cursorTrail.style.top = my + 'px';
+  }, 80);
+});
+document.addEventListener('mousedown', () => {
+  cursor.style.width = '6px'; cursor.style.height = '6px';
+});
+document.addEventListener('mouseup', () => {
+  cursor.style.width = '12px'; cursor.style.height = '12px';
+});
+
+// ─── THREE.JS PARTICLES ───
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+  camera.position.z = 300;
+
+  const geo = new THREE.BufferGeometry();
+  const N = 3500;
+  const pos = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (Math.random() - 0.5) * 1200;
+    pos[i*3+1] = (Math.random() - 0.5) * 1200;
+    pos[i*3+2] = (Math.random() - 0.5) * 600;
+    const t = Math.random();
+    colors[i*3]   = 0.5 + t * 0.3;
+    colors[i*3+1] = 0.2 + t * 0.2;
+    colors[i*3+2] = 0.6 + t * 0.4;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const mat = new THREE.PointsMaterial({ size: 1.4, vertexColors: true, transparent: true, opacity: 0.55 });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+
+  let scrollY = 0;
+  window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    pts.rotation.y += 0.00015;
+    pts.rotation.x += 0.00008;
+    camera.position.y = -scrollY * 0.04;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+
+// ─── LOADER ───
+window.addEventListener('load', () => {
+  let pct = 0;
+  const prog = document.querySelector('.loader-progress');
+  const iv = setInterval(() => {
+    pct += Math.random() * 18;
+    if (pct >= 100) { pct = 100; clearInterval(iv); }
+    prog.textContent = `LOADING — ${Math.floor(pct)}%`;
+  }, 200);
+  setTimeout(() => {
+    gsap.to('#loader', {
+      opacity: 0, duration: 1.2, ease: 'power2.inOut', delay: 1.8,
+      onComplete: () => {
+        document.getElementById('loader').style.display = 'none';
+        startOpening();
+      }
+    });
+  }, 2800);
+});
+
+// ─── OPENING ───
+function startOpening() {
+  const typed = new Typed('#typed-text', {
+    strings: [
+      'Not every story becomes a relationship.^1500',
+      'But some stories still change people.^1200'
+    ],
+    typeSpeed: 48,
+    backSpeed: 28,
+    backDelay: 900,
+    showCursor: true,
+    cursorChar: '|',
+    onComplete: () => {
+      document.getElementById('enter-btn').classList.add('visible');
+    }
+  });
+}
+
+document.getElementById('enter-btn').addEventListener('click', () => {
+  document.getElementById('opening').classList.add('exit');
+  setTimeout(() => {
+    document.getElementById('opening').style.display = 'none';
+    document.getElementById('main-world').classList.add('visible');
+    document.body.style.overflowY = 'scroll';
+    startOrbit();
+    startBubbles();
+    startParallelLines();
+    startNotifRoom();
+    startRevealLines();
+    startAlmost();
+    startFinalScene();
+    showEasterEgg();
+  }, 1400);
+  // ambient sound attempt (may be blocked by browser)
+  try {
+    const a = document.getElementById('ambient-audio');
+    a.volume = 0.07;
+    a.play().catch(() => {});
+  } catch(e) {}
+});
+document.body.style.overflow = 'hidden';
+
+// ─── ORBIT ───
+function startOrbit() {
+  const canvas = document.getElementById('orbit-canvas');
+  const size = canvas.offsetWidth;
+  canvas.width = size * devicePixelRatio;
+  canvas.height = size * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  const sc = devicePixelRatio;
+  let angle = 0;
+  const R = cx * 0.38;
+
+  function drawOrbit() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Orbit path
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(192,132,252,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Center star (Puspo)
+    const gC = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28 * sc);
+    gC.addColorStop(0, 'rgba(255,255,255,0.95)');
+    gC.addColorStop(0.3, 'rgba(244,114,182,0.7)');
+    gC.addColorStop(1, 'rgba(244,114,182,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, 28 * sc, 0, Math.PI * 2);
+    ctx.fillStyle = gC;
+    ctx.fill();
+
+    // Pulse ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, (28 + Math.sin(Date.now()*0.002)*6) * sc, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(244,114,182,0.15)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Orbiting star
+    const ox = cx + Math.cos(angle) * R;
+    const oy = cy + Math.sin(angle) * R;
+    const gO = ctx.createRadialGradient(ox, oy, 0, ox, oy, 16 * sc);
+    gO.addColorStop(0, 'rgba(255,255,255,0.9)');
+    gO.addColorStop(0.4, 'rgba(192,132,252,0.6)');
+    gO.addColorStop(1, 'rgba(192,132,252,0)');
+    ctx.beginPath();
+    ctx.arc(ox, oy, 16 * sc, 0, Math.PI * 2);
+    ctx.fillStyle = gO;
+    ctx.fill();
+
+    // Tail
+    for (let i = 1; i <= 12; i++) {
+      const a2 = angle - i * 0.08;
+      const tx = cx + Math.cos(a2) * R;
+      const ty = cy + Math.sin(a2) * R;
+      ctx.beginPath();
+      ctx.arc(tx, ty, (3 - i * 0.2) * sc, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(192,132,252,${0.12 - i*0.009})`;
+      ctx.fill();
+    }
+
+    angle += 0.008;
+    requestAnimationFrame(drawOrbit);
+  }
+  drawOrbit();
+
+  // Animate text
+  gsap.from('#orbit-text-1', { opacity: 0, y: 20, duration: 1.2, delay: 0.5 });
+  gsap.from('#orbit-text-2', { opacity: 0, y: 20, duration: 1.2, delay: 1.2 });
+}
+
+// ─── BUBBLES ───
+function startBubbles() {
+  const msgs = [
+    "I almost said it many times.",
+    "You became important before I noticed.",
+    "Maybe timing ruined everything.",
+    "Maybe silence did.",
+    "Still… some people remain.",
+    "Even after distance.",
+    "Some chapters don't end.",
+    "They just go quiet."
+  ];
+  const field = document.getElementById('bubble-field');
+  const positions = [
+    { left:'5%', top:'10%' }, { left:'50%', top:'5%' },
+    { left:'70%', top:'20%' }, { left:'15%', top:'40%' },
+    { left:'55%', top:'45%' }, { left:'30%', top:'65%' },
+    { left:'65%', top:'68%' }, { left:'8%', top:'75%' }
+  ];
+
+  msgs.forEach((msg, i) => {
+    const b = document.createElement('div');
+    b.className = 'msg-bubble';
+    b.textContent = msg;
+    b.style.left = positions[i].left;
+    b.style.top = positions[i].top;
+    const delay = i * 1.1;
+    b.style.animationDelay = `${delay}s`;
+    b.style.animationDuration = `${6 + Math.random() * 3}s`;
+    field.appendChild(b);
+  });
+
+  // re-cycle
+  setInterval(() => {
+    const bubbles = field.querySelectorAll('.msg-bubble');
+    bubbles.forEach(b => {
+      b.style.animationDelay = `${Math.random() * 4}s`;
+      b.style.animationName = 'none';
+      b.offsetHeight;
+      b.style.animationName = 'bubbleFloat';
+    });
+  }, 12000);
+}
+
+// ─── PARALLEL LINES ───
+function startParallelLines() {
+  const canvas = document.getElementById('parallel-canvas');
+  canvas.width = canvas.offsetWidth * devicePixelRatio;
+  canvas.height = canvas.offsetHeight * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let t = 0;
+
+  function drawParallel() {
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2;
+    const amplitude = H * 0.3;
+    const gap = H * 0.12;
+
+    // Line 1
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 2) {
+      const progress = x / W;
+      const wave = Math.sin(progress * Math.PI * 2 + t) * amplitude * progress * (1 - progress) * 4;
+      const y = H/2 - gap/2 - wave;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    const g1 = ctx.createLinearGradient(0, 0, W, 0);
+    g1.addColorStop(0, 'transparent');
+    g1.addColorStop(0.4, 'rgba(192,132,252,0.7)');
+    g1.addColorStop(0.6, 'rgba(244,114,182,0.7)');
+    g1.addColorStop(1, 'transparent');
+    ctx.strokeStyle = g1;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Line 2
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 2) {
+      const progress = x / W;
+      const wave = Math.sin(progress * Math.PI * 2 + t + Math.PI) * amplitude * progress * (1 - progress) * 4;
+      const y = H/2 + gap/2 - wave;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    const g2 = ctx.createLinearGradient(0, 0, W, 0);
+    g2.addColorStop(0, 'transparent');
+    g2.addColorStop(0.4, 'rgba(244,114,182,0.7)');
+    g2.addColorStop(0.6, 'rgba(192,132,252,0.7)');
+    g2.addColorStop(1, 'transparent');
+    ctx.strokeStyle = g2;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Near-touch glow
+    const closeness = Math.abs(Math.sin(t * 0.5));
+    if (closeness > 0.8) {
+      ctx.beginPath();
+      ctx.arc(W/2, H/2, 8 * closeness, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(244,114,182,${(closeness - 0.8) * 0.8})`;
+      ctx.fill();
+    }
+
+    t += 0.012;
+    requestAnimationFrame(drawParallel);
+  }
+  drawParallel();
+}
+
+// ─── NOTIFICATION ROOM ───
+function startNotifRoom() {
+  const messages = [
+    { sender: 'them', text: 'Take care.' },
+    { sender: 'me', text: 'Reached home?' },
+    { sender: 'them', text: 'You awake?' },
+    { sender: 'me', text: 'Good luck tomorrow.' },
+    { sender: 'them', text: "Don't stress too much." },
+    { sender: 'me', text: 'Hmm.' },
+    { sender: 'them', text: 'Okayyy :)' },
+  ];
+
+  const container = document.getElementById('chat-msgs');
+  const sysMsg = document.getElementById('system-msg');
+
+  const observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      observer.disconnect();
+      let idx = 0;
+      function addMsg() {
+        if (idx >= messages.length) {
+          setTimeout(() => { sysMsg.style.opacity = '1'; }, 800);
+          return;
+        }
+        const m = messages[idx];
+        const div = document.createElement('div');
+        div.className = `chat-msg ${m.sender}`;
+        div.innerHTML = `<div class="msg-text">${m.text}</div>`;
+        container.appendChild(div);
+        div.style.animation = 'msgAppear 0.5s ease forwards';
+        idx++;
+        setTimeout(addMsg, 700 + Math.random() * 600);
+      }
+      setTimeout(addMsg, 600);
+    }
+  }, { threshold: 0.4 });
+  observer.observe(document.getElementById('notif-room'));
+}
+
+// ─── REVEAL LINES ───
+function startRevealLines() {
+  const lines = document.querySelectorAll('[data-reveal]');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) e.target.classList.add('lit');
+      else e.target.classList.remove('lit');
+    });
+  }, { threshold: 0.7 });
+  lines.forEach(l => obs.observe(l));
+}
+
+// ─── THE ALMOST ───
+function startAlmost() {
+  const canvas = document.getElementById('almost-canvas');
+  const size = canvas.offsetWidth;
+  canvas.width = size * devicePixelRatio;
+  canvas.height = size * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+
+  let obj1 = { x: cx - 100 * devicePixelRatio, y: cy, baseX: cx - 100 * devicePixelRatio, baseY: cy, radius: 22 * devicePixelRatio };
+  let obj2 = { x: cx + 100 * devicePixelRatio, y: cy, baseX: cx + 100 * devicePixelRatio, baseY: cy, radius: 22 * devicePixelRatio };
+  let dragging = null, isDragging = false;
+  let glowIntensity = 0;
+  let mouseX = 0, mouseY = 0;
+  let animFrame = 0;
+
+  function getDist(a, b) {
+    return Math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    animFrame++;
+
+    // Pulse effect on objects
+    const pulse = Math.sin(animFrame * 0.04) * 2;
+
+    // Calculate closeness
+    const dist = getDist(obj1, obj2);
+    const minDist = (obj1.radius + obj2.radius) * 1.6;
+    const closeness = Math.max(0, 1 - (dist - minDist) / (W * 0.35));
+    glowIntensity += (closeness - glowIntensity) * 0.08;
+
+    // Background glow
+    if (glowIntensity > 0.01) {
+      const mid = { x: (obj1.x + obj2.x)/2, y: (obj1.y + obj2.y)/2 };
+      const gr = ctx.createRadialGradient(mid.x, mid.y, 0, mid.x, mid.y, 120 * devicePixelRatio);
+      gr.addColorStop(0, `rgba(244,114,182,${glowIntensity * 0.15})`);
+      gr.addColorStop(1, 'transparent');
+      ctx.fillStyle = gr;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // Connection line
+    if (closeness > 0.2) {
+      ctx.beginPath();
+      ctx.moveTo(obj1.x, obj1.y);
+      ctx.lineTo(obj2.x, obj2.y);
+      const lg = ctx.createLinearGradient(obj1.x, obj1.y, obj2.x, obj2.y);
+      lg.addColorStop(0, `rgba(192,132,252,${closeness * 0.4})`);
+      lg.addColorStop(0.5, `rgba(244,114,182,${closeness * 0.5})`);
+      lg.addColorStop(1, `rgba(192,132,252,${closeness * 0.4})`);
+      ctx.strokeStyle = lg;
+      ctx.lineWidth = closeness * 2;
+      ctx.stroke();
+    }
+
+    // Draw obj1 (purple)
+    [obj1, obj2].forEach((obj, i) => {
+      const col = i === 0 ? ['192,132,252', '123,47,212'] : ['244,114,182', '214,51,132'];
+      const r = obj.radius + pulse;
+      const gx = ctx.createRadialGradient(obj.x, obj.y, 0, obj.x, obj.y, r * 3);
+      gx.addColorStop(0, `rgba(255,255,255,0.9)`);
+      gx.addColorStop(0.3, `rgba(${col[0]},0.8)`);
+      gx.addColorStop(1, `rgba(${col[1]},0)`);
+      ctx.beginPath();
+      ctx.arc(obj.x, obj.y, r * 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = gx;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(obj.x, obj.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${col[0]}, 0.6)`;
+      ctx.fill();
+    });
+
+    // Spring back
+    if (!isDragging || dragging !== obj1) {
+      obj1.x += (obj1.baseX - obj1.x) * 0.04;
+      obj1.y += (obj1.baseY - obj1.y) * 0.04;
+    }
+    if (!isDragging || dragging !== obj2) {
+      obj2.x += (obj2.baseX - obj2.x) * 0.04;
+      obj2.y += (obj2.baseY - obj2.y) * 0.04;
+    }
+
+    // Repel when too close
+    const d = getDist(obj1, obj2);
+    const minR = (obj1.radius + obj2.radius) * 1.05;
+    if (d < minR) {
+      const angle = Math.atan2(obj2.y - obj1.y, obj2.x - obj1.x);
+      const overlap = (minR - d) * 0.5;
+      if (dragging !== obj1) { obj1.x -= Math.cos(angle) * overlap; obj1.y -= Math.sin(angle) * overlap; }
+      if (dragging !== obj2) { obj2.x += Math.cos(angle) * overlap; obj2.y += Math.sin(angle) * overlap; }
+    }
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  function getCanvasPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * devicePixelRatio,
+      y: (clientY - rect.top) * devicePixelRatio
+    };
+  }
+
+  function onDown(e) {
+    const p = getCanvasPos(e);
+    for (const obj of [obj1, obj2]) {
+      if (Math.hypot(p.x - obj.x, p.y - obj.y) < obj.radius * 2.5) {
+        dragging = obj; isDragging = true; break;
+      }
+    }
+  }
+  function onMove(e) {
+    if (!isDragging || !dragging) return;
+    const p = getCanvasPos(e);
+    dragging.x = p.x; dragging.y = p.y;
+  }
+  function onUp() { isDragging = false; dragging = null; }
+
+  canvas.addEventListener('mousedown', onDown);
+  canvas.addEventListener('mousemove', onMove);
+  canvas.addEventListener('mouseup', onUp);
+  canvas.addEventListener('touchstart', onDown, { passive: true });
+  canvas.addEventListener('touchmove', onMove, { passive: true });
+  canvas.addEventListener('touchend', onUp);
+}
+
+// ─── FINAL SCENE ───
+function startFinalScene() {
+  const lines = [
+    { id: 'f1', delay: 0 },
+    { id: 'f2', delay: 1800 },
+    { id: 'f3', delay: 3600 },
+    { id: 'f-birthday', delay: 6000 },
+    { id: 'f-silence', delay: 8500 }
+  ];
+
+  const obs = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      obs.disconnect();
+      lines.forEach(l => {
+        setTimeout(() => {
+          const el = document.getElementById(l.id);
+          el.classList.add('revealed');
+        }, l.delay);
+      });
+    }
+  }, { threshold: 0.3 });
+  obs.observe(document.getElementById('final-section'));
+}
+
+// ─── EASTER EGG ───
+function showEasterEgg() {
+  let scrolled = false;
+  window.addEventListener('scroll', () => {
+    if (!scrolled && window.scrollY > 200) {
+      scrolled = true;
+      setTimeout(() => {
+        document.getElementById('easter-egg').classList.add('show');
+      }, 3000);
+    }
+  });
+
+  let shown = false;
+  document.getElementById('egg-trigger').addEventListener('click', () => {
+    const msg = document.getElementById('egg-msg');
+    msg.style.opacity = shown ? '0' : '1';
+    shown = !shown;
+  });
+
+  // Konami code easter egg
+  let keys = [];
+  const code = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  document.addEventListener('keydown', e => {
+    keys.push(e.key);
+    keys = keys.slice(-10);
+    if (JSON.stringify(keys) === JSON.stringify(code)) {
+      gsap.to('body', { filter: 'hue-rotate(180deg)', duration: 1.5, yoyo: true, repeat: 1 });
+    }
+  });
+}
+
+// ─── SCROLL SMOOTH ───
+gsap.registerPlugin(ScrollTrigger);
+gsap.utils.toArray('section').forEach((sec, i) => {
+  if (i === 0) return;
+  gsap.from(sec.querySelector('.sec-label'), {
+    scrollTrigger: { trigger: sec, start: 'top 80%' },
+    opacity: 0, y: 20, duration: 1.2, ease: 'power3.out'
+  });
+});
+</script>
+</body>
+</html>
